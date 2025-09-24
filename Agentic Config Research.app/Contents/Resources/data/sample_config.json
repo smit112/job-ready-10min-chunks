@@ -1,0 +1,43 @@
+{
+  "application": {
+    "name": "sample-web-app",
+    "version": "1.2.3",
+    "environment": "production",
+    "debug": false
+  },
+  "database": {
+    "host": "db.example.com",
+    "port": 5432,
+    "database": "app_db",
+    "username": "app_user",
+    "password": "secure_password_123",
+    "ssl_enabled": true,
+    "connection_timeout": 10,
+    "pool_size": 20,
+    "max_connections": 100
+  },
+  "network": {
+    "api_host": "api.example.com",
+    "api_port": 443,
+    "ssl_enabled": true,
+    "timeout": 30,
+    "retry_count": 3
+  },
+  "security": {
+    "jwt_secret": "your-secret-key-here",
+    "api_key": "api-key-12345",
+    "ssl_certificate": "/path/to/cert.pem",
+    "ssl_key": "/path/to/key.pem"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "/var/log/app.log",
+    "max_size": "100MB",
+    "backup_count": 5
+  },
+  "monitoring": {
+    "metrics_enabled": true,
+    "health_check_url": "https://api.example.com/health",
+    "alert_email": "admin@example.com"
+  }
+}

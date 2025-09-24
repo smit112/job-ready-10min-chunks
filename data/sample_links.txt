@@ -1,0 +1,37 @@
+# Sample Links for Validation Testing
+# This file contains various types of links to test the link validation functionality
+
+# Valid URLs
+https://www.google.com
+https://github.com
+https://stackoverflow.com
+https://docs.python.org
+https://fastapi.tiangolo.com
+
+# API Endpoints
+https://api.github.com/users
+https://jsonplaceholder.typicode.com/posts
+https://httpbin.org/get
+https://reqres.in/api/users
+
+# Configuration Documentation Links
+https://docs.docker.com/compose/
+https://kubernetes.io/docs/concepts/configuration/
+https://nginx.org/en/docs/
+https://www.postgresql.org/docs/
+
+# Potentially Problematic URLs (for testing)
+https://this-domain-does-not-exist-12345.com
+http://localhost:9999
+https://example.com:8080/nonexistent-endpoint
+https://httpstat.us/500
+
+# Internal/Private URLs (may not be accessible)
+http://192.168.1.100
+https://internal.company.com
+http://localhost:3000
+
+# Different protocols
+ftp://ftp.example.com
+mailto:admin@example.com
+file:///etc/hosts

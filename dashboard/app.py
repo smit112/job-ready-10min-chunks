@@ -97,6 +97,15 @@ async def dashboard_home():
         "stats": await get_dashboard_stats()
     })
 
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_interface():
+    """Chat interface for agent interaction."""
+    return templates.TemplateResponse("chat.html", {
+        "request": {},
+        "title": "Configuration Research Agent - Chat",
+        "current_time": datetime.now().strftime("%H:%M")
+    })
+
 @app.get("/api/stats")
 async def get_dashboard_stats():
     """Get dashboard statistics."""
@@ -293,67 +302,105 @@ async def get_validation_history(limit: int = 10):
         logger.error(f"Error getting validation history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# File upload endpoints
-@app.post("/api/upload/excel")
-async def upload_excel_file(file: UploadFile = File(...)):
-    """Upload Excel file for processing."""
+# MCP Integration - File upload endpoints
+@app.post("/api/upload/file")
+async def upload_file(file: UploadFile = File(...), session_id: str = Form(...)):
+    """Upload and process any supported file type."""
     try:
         # Save uploaded file
         upload_dir = Path("/workspace/data/uploads")
         upload_dir.mkdir(parents=True, exist_ok=True)
         
-        file_path = upload_dir / f"{uuid.uuid4()}_{file.filename}"
+        file_path = upload_dir / f"{session_id}_{uuid.uuid4()}_{file.filename}"
         with open(file_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
         
-        # Process Excel file
-        excel_processor = ExcelProcessor(
-            settings.excel_templates_dir,
-            settings.excel_output_dir
-        )
-        configs = excel_processor.read_excel_file(file_path)
+        # Process file based on type
+        processed_data = {}
+        
+        if file.filename.lower().endswith(('.xlsx', '.xls')):
+            # Process Excel file
+            excel_processor = ExcelProcessor(
+                settings.excel_templates_dir,
+                settings.excel_output_dir
+            )
+            configs = excel_processor.read_excel_file(file_path)
+            processed_data = {
+                "type": "excel",
+                "sheets": list(configs.keys()),
+                "configurations": {k: {
+                    "headers": v.headers,
+                    "row_count": len(v.data),
+                    "validation_rules": v.validation_rules
+                } for k, v in configs.items()}
+            }
+            
+        elif file.filename.lower().endswith('.pdf'):
+            # Process PDF file
+            pdf_parser = PDFParser(
+                settings.pdf_docs_dir,
+                settings.pdf_errors_dir
+            )
+            pdf_doc = pdf_parser.parse_pdf(file_path)
+            processed_data = {
+                "type": "pdf",
+                "title": pdf_doc.title,
+                "page_count": len(pdf_doc.pages),
+                "error_patterns": pdf_doc.error_patterns,
+                "troubleshooting_steps": pdf_doc.troubleshooting_steps,
+                "configuration_snippets": pdf_doc.configuration_snippets
+            }
+            
+        elif file.filename.lower().endswith(('.json', '.yaml', '.yml')):
+            # Process configuration file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                if file.filename.lower().endswith('.json'):
+                    import json
+                    config_data = json.load(f)
+                else:
+                    import yaml
+                    config_data = yaml.safe_load(f)
+            
+            processed_data = {
+                "type": "config",
+                "format": file.filename.split('.')[-1],
+                "data": config_data,
+                "keys": list(config_data.keys()) if isinstance(config_data, dict) else []
+            }
+            
+        else:
+            # Process as text file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            processed_data = {
+                "type": "text",
+                "content": content,
+                "line_count": len(content.split('\n')),
+                "word_count": len(content.split())
+            }
         
         return {
             "file_path": str(file_path),
-            "sheets": list(configs.keys()),
+            "processed_data": processed_data,
             "status": "processed"
         }
+        
     except Exception as e:
-        logger.error(f"Error uploading Excel file: {str(e)}")
+        logger.error(f"Error uploading file: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Legacy endpoints for backward compatibility
+@app.post("/api/upload/excel")
+async def upload_excel_file(file: UploadFile = File(...)):
+    """Upload Excel file for processing."""
+    return await upload_file(file, "legacy")
 
 @app.post("/api/upload/pdf")
 async def upload_pdf_file(file: UploadFile = File(...)):
     """Upload PDF file for processing."""
-    try:
-        # Save uploaded file
-        upload_dir = Path("/workspace/data/uploads")
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        
-        file_path = upload_dir / f"{uuid.uuid4()}_{file.filename}"
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-        
-        # Process PDF file
-        pdf_parser = PDFParser(
-            settings.pdf_docs_dir,
-            settings.pdf_errors_dir
-        )
-        pdf_doc = pdf_parser.parse_pdf(file_path)
-        
-        return {
-            "file_path": str(file_path),
-            "title": pdf_doc.title,
-            "page_count": len(pdf_doc.pages),
-            "error_patterns": len(pdf_doc.error_patterns),
-            "troubleshooting_steps": len(pdf_doc.troubleshooting_steps),
-            "status": "processed"
-        }
-    except Exception as e:
-        logger.error(f"Error uploading PDF file: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return await upload_file(file, "legacy")
 
 # Knowledge base endpoints
 @app.get("/api/knowledge-base")
@@ -378,6 +425,283 @@ async def get_knowledge_base_stats():
     except Exception as e:
         logger.error(f"Error getting knowledge base stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# MCP Integration - Agent Chat endpoint
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+    files: List[Dict[str, Any]] = []
+
+@app.post("/api/chat/agent")
+async def chat_with_agent(request: ChatRequest):
+    """Chat with the configuration research agent using MCP integration."""
+    try:
+        # Process the message and files using the agent
+        response = await process_agent_request(request.message, request.files, request.session_id)
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error in agent chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def process_agent_request(message: str, files: List[Dict[str, Any]], session_id: str):
+    """Process agent request with MCP integration."""
+    try:
+        # Analyze the message and files
+        analysis_result = await analyze_request(message, files)
+        
+        # Generate response using the agent
+        response = await generate_agent_response(message, files, analysis_result, session_id)
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error processing agent request: {str(e)}")
+        return {
+            "message": f"I encountered an error processing your request: {str(e)}",
+            "attachments": [],
+            "metadata": {"error": True, "error_message": str(e)}
+        }
+
+async def analyze_request(message: str, files: List[Dict[str, Any]]):
+    """Analyze the user request and uploaded files."""
+    analysis = {
+        "message_type": "general",
+        "files_analysis": {},
+        "keywords": [],
+        "intent": "unknown"
+    }
+    
+    # Analyze message intent
+    message_lower = message.lower()
+    if any(word in message_lower for word in ["analyze", "analysis", "examine"]):
+        analysis["intent"] = "analysis"
+    elif any(word in message_lower for word in ["validate", "validation", "check"]):
+        analysis["intent"] = "validation"
+    elif any(word in message_lower for word in ["troubleshoot", "error", "issue", "problem"]):
+        analysis["intent"] = "troubleshooting"
+    elif any(word in message_lower for word in ["recommend", "suggestion", "best practice"]):
+        analysis["intent"] = "recommendation"
+    
+    # Analyze files
+    for file_data in files:
+        file_analysis = {
+            "type": file_data.get("type", "unknown"),
+            "processed_data": file_data.get("processed_data", {}),
+            "insights": []
+        }
+        
+        # Extract insights based on file type
+        if file_data.get("type") == "excel":
+            file_analysis["insights"] = analyze_excel_file(file_data.get("processed_data", {}))
+        elif file_data.get("type") == "pdf":
+            file_analysis["insights"] = analyze_pdf_file(file_data.get("processed_data", {}))
+        elif file_data.get("type") == "config":
+            file_analysis["insights"] = analyze_config_file(file_data.get("processed_data", {}))
+        
+        analysis["files_analysis"][file_data.get("name", "unknown")] = file_analysis
+    
+    return analysis
+
+def analyze_excel_file(processed_data: Dict[str, Any]):
+    """Analyze Excel file data."""
+    insights = []
+    
+    if "configurations" in processed_data:
+        for sheet_name, config in processed_data["configurations"].items():
+            insights.append(f"Found configuration sheet '{sheet_name}' with {config.get('row_count', 0)} rows")
+            
+            if config.get("validation_rules"):
+                insights.append(f"Sheet '{sheet_name}' has validation rules defined")
+            
+            headers = config.get("headers", [])
+            if any("password" in h.lower() for h in headers):
+                insights.append("⚠️ Password fields detected - consider security implications")
+            
+            if any("port" in h.lower() for h in headers):
+                insights.append("🔌 Port configurations found - validate port ranges")
+    
+    return insights
+
+def analyze_pdf_file(processed_data: Dict[str, Any]):
+    """Analyze PDF file data."""
+    insights = []
+    
+    if "error_patterns" in processed_data:
+        error_count = len(processed_data["error_patterns"])
+        if error_count > 0:
+            insights.append(f"📋 Found {error_count} error patterns in documentation")
+            
+            # Categorize errors by severity
+            critical_errors = [e for e in processed_data["error_patterns"] if e.get("severity") == "CRITICAL"]
+            if critical_errors:
+                insights.append(f"🚨 {len(critical_errors)} critical error patterns identified")
+    
+    if "troubleshooting_steps" in processed_data:
+        steps_count = len(processed_data["troubleshooting_steps"])
+        if steps_count > 0:
+            insights.append(f"🛠️ Found {steps_count} troubleshooting steps")
+    
+    if "configuration_snippets" in processed_data:
+        snippets_count = len(processed_data["configuration_snippets"])
+        if snippets_count > 0:
+            insights.append(f"⚙️ Found {snippets_count} configuration snippets")
+    
+    return insights
+
+def analyze_config_file(processed_data: Dict[str, Any]):
+    """Analyze configuration file data."""
+    insights = []
+    
+    if "data" in processed_data:
+        config_data = processed_data["data"]
+        keys = processed_data.get("keys", [])
+        
+        insights.append(f"📄 Configuration file with {len(keys)} main sections")
+        
+        # Check for common configuration patterns
+        if any("password" in k.lower() for k in keys):
+            insights.append("🔐 Password configuration detected")
+        
+        if any("port" in k.lower() for k in keys):
+            insights.append("🔌 Port configuration found")
+        
+        if any("database" in k.lower() for k in keys):
+            insights.append("🗄️ Database configuration detected")
+        
+        if any("api" in k.lower() for k in keys):
+            insights.append("🌐 API configuration detected")
+    
+    return insights
+
+async def generate_agent_response(message: str, files: List[Dict[str, Any]], analysis: Dict[str, Any], session_id: str):
+    """Generate intelligent response using the agent."""
+    try:
+        # Create a research task for comprehensive analysis
+        task_id = config_agent.create_research_task(
+            name=f"Chat Analysis - {session_id}",
+            description=message,
+            excel_files=[f["server_path"] for f in files if f.get("type") == "excel"],
+            pdf_files=[f["server_path"] for f in files if f.get("type") == "pdf"],
+            links=[],  # Could be extracted from message
+            validation_rules={}
+        )
+        
+        # Execute the research task
+        result = await config_agent.execute_research_task(task_id)
+        
+        # Generate response based on analysis and results
+        response_message = generate_response_message(message, analysis, result)
+        
+        # Create attachments from results
+        attachments = create_response_attachments(result)
+        
+        return {
+            "message": response_message,
+            "attachments": attachments,
+            "metadata": {
+                "task_id": task_id,
+                "intent": analysis["intent"],
+                "files_processed": len(files),
+                "analysis_complete": True
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating agent response: {str(e)}")
+        return {
+            "message": f"I analyzed your request and found some insights, but encountered an issue: {str(e)}",
+            "attachments": [],
+            "metadata": {"error": True, "error_message": str(e)}
+        }
+
+def generate_response_message(message: str, analysis: Dict[str, Any], result: ResearchResult):
+    """Generate a comprehensive response message."""
+    response_parts = []
+    
+    # Start with analysis summary
+    if analysis["intent"] == "analysis":
+        response_parts.append("📊 **Configuration Analysis Results**\n")
+    elif analysis["intent"] == "validation":
+        response_parts.append("✅ **Configuration Validation Results**\n")
+    elif analysis["intent"] == "troubleshooting":
+        response_parts.append("🛠️ **Troubleshooting Analysis**\n")
+    else:
+        response_parts.append("🔍 **Configuration Research Results**\n")
+    
+    # Add file insights
+    if analysis["files_analysis"]:
+        response_parts.append("**File Analysis:**")
+        for file_name, file_analysis in analysis["files_analysis"].items():
+            response_parts.append(f"\n📁 **{file_name}** ({file_analysis['type']})")
+            for insight in file_analysis["insights"]:
+                response_parts.append(f"  • {insight}")
+    
+    # Add validation results
+    if result.validation_results.get("overall_status"):
+        status = result.validation_results["overall_status"]
+        if status == "passed":
+            response_parts.append(f"\n✅ **Validation Status:** All validations passed")
+        elif status == "failed":
+            response_parts.append(f"\n❌ **Validation Status:** {result.validation_results.get('failed_rules', 0)} validation failures")
+        else:
+            response_parts.append(f"\n⚠️ **Validation Status:** {status}")
+    
+    # Add troubleshooting suggestions
+    if result.troubleshooting_suggestions:
+        response_parts.append(f"\n🛠️ **Troubleshooting Recommendations:**")
+        for i, suggestion in enumerate(result.troubleshooting_suggestions[:3], 1):
+            response_parts.append(f"\n{i}. **{suggestion['description']}**")
+            response_parts.append(f"   *Suggested Action:* {suggestion['suggested_action']}")
+            response_parts.append(f"   *Priority:* {suggestion['priority']}")
+    
+    # Add configuration recommendations
+    if result.configuration_recommendations:
+        response_parts.append(f"\n💡 **Configuration Recommendations:**")
+        for i, rec in enumerate(result.configuration_recommendations[:3], 1):
+            response_parts.append(f"\n{i}. **{rec['description']}**")
+            if rec.get('suggested_fields'):
+                response_parts.append(f"   *Missing fields:* {', '.join(rec['suggested_fields'])}")
+    
+    # Add error summary
+    if result.error_summary.get("total_errors", 0) > 0:
+        response_parts.append(f"\n⚠️ **Issues Found:** {result.error_summary['total_errors']} total issues")
+        if result.error_summary.get("critical_errors"):
+            response_parts.append(f"   🚨 Critical: {len(result.error_summary['critical_errors'])}")
+        if result.error_summary.get("warning_errors"):
+            response_parts.append(f"   ⚠️ Warnings: {len(result.error_summary['warning_errors'])}")
+    
+    return "\n".join(response_parts)
+
+def create_response_attachments(result: ResearchResult):
+    """Create response attachments from analysis results."""
+    attachments = []
+    
+    # Add validation report attachment
+    if result.validation_results:
+        attachments.append({
+            "name": "Validation Report",
+            "icon": "📋",
+            "description": f"Overall status: {result.validation_results.get('overall_status', 'unknown')}"
+        })
+    
+    # Add troubleshooting recommendations attachment
+    if result.troubleshooting_suggestions:
+        attachments.append({
+            "name": "Troubleshooting Guide",
+            "icon": "🛠️",
+            "description": f"{len(result.troubleshooting_suggestions)} recommendations"
+        })
+    
+    # Add configuration recommendations attachment
+    if result.configuration_recommendations:
+        attachments.append({
+            "name": "Configuration Recommendations",
+            "icon": "💡",
+            "description": f"{len(result.configuration_recommendations)} suggestions"
+        })
+    
+    return attachments
 
 # Health check endpoint
 @app.get("/api/health")
@@ -485,7 +809,10 @@ if __name__ == "__main__":
                         <h5>Quick Actions</h5>
                     </div>
                     <div class="card-body">
-                        <a href="/api/docs" class="btn btn-primary me-2">
+                        <a href="/chat" class="btn btn-primary me-2">
+                            <i class="fas fa-robot"></i> Chat with Agent
+                        </a>
+                        <a href="/api/docs" class="btn btn-outline me-2">
                             <i class="fas fa-book"></i> API Documentation
                         </a>
                         <button class="btn btn-success me-2" onclick="createResearchTask()">

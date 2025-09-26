@@ -2,7 +2,6 @@
 Excel processor for configuration templates and validation rules.
 Handles reading, writing, and processing Excel files for configuration research.
 """
-import pandas as pd
 import openpyxl
 from typing import Dict, List, Any, Optional, Union
 from pathlib import Path
@@ -49,25 +48,39 @@ class ExcelProcessor:
         configs = {}
         
         try:
-            # Read all sheets
-            excel_file = pd.ExcelFile(file_path)
+            # Read Excel file using openpyxl
+            workbook = openpyxl.load_workbook(file_path, data_only=True)
             
-            for sheet_name in excel_file.sheet_names:
-                df = pd.read_excel(file_path, sheet_name=sheet_name)
+            for sheet_name in workbook.sheetnames:
+                worksheet = workbook[sheet_name]
                 
-                # Extract headers and data
-                headers = df.columns.tolist()
-                data = df.to_dict('records')
+                # Extract headers from first row
+                headers = []
+                for cell in worksheet[1]:
+                    if cell.value:
+                        headers.append(str(cell.value))
+                    else:
+                        headers.append(f"Column_{len(headers) + 1}")
                 
-                # Extract validation rules (if present in specific columns)
-                validation_rules = self._extract_validation_rules(df)
+                # Extract data from remaining rows
+                data = []
+                for row in worksheet.iter_rows(min_row=2, values_only=True):
+                    if any(cell is not None for cell in row):  # Skip empty rows
+                        row_data = {}
+                        for i, value in enumerate(row):
+                            if i < len(headers):
+                                row_data[headers[i]] = value
+                        data.append(row_data)
+                
+                # Extract validation rules (simplified)
+                validation_rules = self._extract_validation_rules_simple(worksheet, headers)
                 
                 # Extract metadata
                 metadata = {
                     'file_name': file_path.name,
                     'sheet_name': sheet_name,
-                    'row_count': len(df),
-                    'column_count': len(df.columns),
+                    'row_count': len(data),
+                    'column_count': len(headers),
                     'last_modified': file_path.stat().st_mtime
                 }
                 
@@ -87,18 +100,28 @@ class ExcelProcessor:
         
         return configs
     
-    def _extract_validation_rules(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Extract validation rules from DataFrame."""
+    def _extract_validation_rules_simple(self, worksheet, headers: List[str]) -> Dict[str, Any]:
+        """Extract validation rules from worksheet."""
         rules = {}
         
-        for column in df.columns:
-            # Check for validation rule indicators in column names or data
-            if 'validation' in column.lower() or 'rule' in column.lower():
-                rules[column] = df[column].dropna().tolist()
-            elif 'required' in column.lower():
-                rules[f"{column}_required"] = True
-            elif 'format' in column.lower():
-                rules[f"{column}_format"] = df[column].dropna().tolist()
+        for i, header in enumerate(headers):
+            # Check for validation rule indicators in column names
+            if 'validation' in header.lower() or 'rule' in header.lower():
+                # Get values from this column
+                values = []
+                for row in worksheet.iter_rows(min_row=2, min_col=i+1, max_col=i+1, values_only=True):
+                    if row[0] is not None:
+                        values.append(str(row[0]))
+                rules[header] = values
+            elif 'required' in header.lower():
+                rules[f"{header}_required"] = True
+            elif 'format' in header.lower():
+                # Get format values from this column
+                values = []
+                for row in worksheet.iter_rows(min_row=2, min_col=i+1, max_col=i+1, values_only=True):
+                    if row[0] is not None:
+                        values.append(str(row[0]))
+                rules[f"{header}_format"] = values
         
         return rules
     
@@ -167,9 +190,10 @@ class ExcelProcessor:
         metadata_sheet.cell(row=1, column=1, value="Property")
         metadata_sheet.cell(row=1, column=2, value="Value")
         
+        from datetime import datetime
         metadata = {
             "Template Name": template_name,
-            "Created": pd.Timestamp.now().isoformat(),
+            "Created": datetime.now().isoformat(),
             "Version": "1.0",
             "Description": f"Configuration template for {template_name}"
         }
@@ -270,45 +294,62 @@ class ExcelProcessor:
             Path to the exported file
         """
         if output_file is None:
-            output_file = self.output_dir / f"validation_results_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            from datetime import datetime
+            output_file = self.output_dir / f"validation_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         else:
             output_file = Path(output_file)
         
-        # Create DataFrame
-        results_data = []
+        # Create workbook
+        wb = openpyxl.Workbook()
+        
+        # Remove default sheet
+        wb.remove(wb.active)
+        
+        # Create validation results sheet
+        results_sheet = wb.create_sheet("Validation_Results")
+        
+        # Add headers
+        results_sheet.cell(row=1, column=1, value="Field Name")
+        results_sheet.cell(row=1, column=2, value="Error")
+        results_sheet.cell(row=1, column=3, value="Status")
+        results_sheet.cell(row=1, column=4, value="Timestamp")
+        
+        # Add data
+        row = 2
         for field_name, errors in validation_results.items():
             for error in errors:
-                results_data.append({
-                    'Field Name': field_name,
-                    'Error': error,
-                    'Status': 'FAILED',
-                    'Timestamp': pd.Timestamp.now().isoformat()
-                })
+                results_sheet.cell(row=row, column=1, value=field_name)
+                results_sheet.cell(row=row, column=2, value=error)
+                results_sheet.cell(row=row, column=3, value="FAILED")
+                results_sheet.cell(row=row, column=4, value=datetime.now().isoformat())
+                row += 1
         
-        if not results_data:
-            results_data.append({
-                'Field Name': 'All Fields',
-                'Error': 'No validation errors found',
-                'Status': 'PASSED',
-                'Timestamp': pd.Timestamp.now().isoformat()
-            })
+        if not any(validation_results.values()):
+            results_sheet.cell(row=2, column=1, value="All Fields")
+            results_sheet.cell(row=2, column=2, value="No validation errors found")
+            results_sheet.cell(row=2, column=3, value="PASSED")
+            results_sheet.cell(row=2, column=4, value=datetime.now().isoformat())
         
-        df = pd.DataFrame(results_data)
+        # Create summary sheet
+        summary_sheet = wb.create_sheet("Summary")
+        summary_sheet.cell(row=1, column=1, value="Property")
+        summary_sheet.cell(row=1, column=2, value="Value")
         
-        # Save to Excel
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-            df.to_excel(writer, sheet_name='Validation_Results', index=False)
-            
-            # Add summary sheet
-            summary_data = {
-                'Total Fields': len(validation_results),
-                'Fields with Errors': len([f for f, e in validation_results.items() if e]),
-                'Total Errors': sum(len(errors) for errors in validation_results.values()),
-                'Validation Date': pd.Timestamp.now().isoformat()
-            }
-            
-            summary_df = pd.DataFrame([summary_data])
-            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+        summary_data = {
+            'Total Fields': len(validation_results),
+            'Fields with Errors': len([f for f, e in validation_results.items() if e]),
+            'Total Errors': sum(len(errors) for errors in validation_results.values()),
+            'Validation Date': datetime.now().isoformat()
+        }
+        
+        row = 2
+        for prop, value in summary_data.items():
+            summary_sheet.cell(row=row, column=1, value=prop)
+            summary_sheet.cell(row=row, column=2, value=value)
+            row += 1
+        
+        # Save workbook
+        wb.save(output_file)
         
         logger.info(f"Exported validation results to: {output_file}")
         return output_file

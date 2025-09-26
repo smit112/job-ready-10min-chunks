@@ -114,17 +114,11 @@ class TroubleshootingAI:
         logger.info("Troubleshooting AI initialized")
     
     def _initialize_ai_components(self):
-        """Initialize AI components."""
+        """Initialize AI components - LOCAL PROCESSING ONLY."""
         try:
-            if settings.openai_api_key:
-                self.llm = ChatOpenAI(
-                    model_name=settings.default_model,
-                    temperature=settings.temperature,
-                    max_tokens=settings.max_tokens,
-                    openai_api_key=settings.openai_api_key
-                )
-                self.embeddings = OpenAIEmbeddings(openai_api_key=settings.openai_api_key)
-                logger.info("OpenAI components initialized")
+            # Disable external API integration - use only local processing
+            self.llm = None
+            self.embeddings = None
             
             # Initialize sentence transformer for local embeddings
             self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -136,7 +130,7 @@ class TroubleshootingAI:
                 ngram_range=(1, 2)
             )
             
-            logger.info("AI components initialized successfully")
+            logger.info("Local AI components initialized successfully (no external APIs)")
             
         except Exception as e:
             logger.error(f"Failed to initialize AI components: {str(e)}")
@@ -307,9 +301,10 @@ class TroubleshootingAI:
         kb_recommendations = await self._generate_kb_recommendations(case)
         pattern_recommendations = await self._generate_pattern_recommendations(case)
         
-        if AI_AVAILABLE and self.llm:
-            ai_recommendations = await self._generate_ai_recommendations(case)
-            recommendations.extend(ai_recommendations)
+        # Disabled external AI recommendations - use only local processing
+        # if AI_AVAILABLE and self.llm:
+        #     ai_recommendations = await self._generate_ai_recommendations(case)
+        #     recommendations.extend(ai_recommendations)
         
         recommendations.extend(kb_recommendations)
         recommendations.extend(pattern_recommendations)

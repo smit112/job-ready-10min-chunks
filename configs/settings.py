@@ -9,9 +9,8 @@ import os
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
     
-    # API Keys
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
+    # Local Processing Only - No External APIs
+    local_processing_only: bool = True
     
     # Database
     database_url: str = "sqlite:///./config_research.db"
@@ -36,10 +35,9 @@ class Settings(BaseSettings):
     max_link_depth: int = 3
     link_timeout: int = 30
     
-    # AI Model settings
-    default_model: str = "gpt-4"
-    max_tokens: int = 4000
-    temperature: float = 0.1
+    # Local Processing settings
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    allowed_file_types: List[str] = ['.xlsx', '.xls', '.pdf', '.json', '.yaml', '.yml', '.txt']
     
     # Validation settings
     validation_timeout: int = 60

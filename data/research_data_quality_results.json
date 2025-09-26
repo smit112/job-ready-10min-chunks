@@ -1,0 +1,204 @@
+{
+  "dataset_info": {
+    "source": "https://figshare.com/ndownloader/files/40075411",
+    "total_records": 20,
+    "analysis_date": "2024-01-15"
+  },
+  "quality_issues": {
+    "missing_required": [
+      {
+        "field": "participant_id",
+        "count": 1,
+        "rows": [
+          0
+        ],
+        "percentage": 5.0
+      },
+      {
+        "field": "age",
+        "count": 1,
+        "rows": [
+          16
+        ],
+        "percentage": 5.0
+      }
+    ],
+    "data_type_mismatches": [
+      {
+        "field": "age",
+        "expected_type": "numeric",
+        "count": 1,
+        "invalid_values": [
+          "twenty-five"
+        ],
+        "rows": [
+          2
+        ]
+      },
+      {
+        "field": "income",
+        "expected_type": "numeric",
+        "count": 1,
+        "invalid_values": [
+          "High"
+        ],
+        "rows": [
+          7
+        ]
+      },
+      {
+        "field": "test_score",
+        "expected_type": "numeric",
+        "count": 1,
+        "invalid_values": [
+          "Excellent"
+        ],
+        "rows": [
+          8
+        ]
+      },
+      {
+        "field": "response_time_ms",
+        "expected_type": "numeric",
+        "count": 1,
+        "invalid_values": [
+          "Fast"
+        ],
+        "rows": [
+          12
+        ]
+      },
+      {
+        "field": "satisfaction_rating",
+        "expected_type": "numeric",
+        "count": 1,
+        "invalid_values": [
+          "Good"
+        ],
+        "rows": [
+          14
+        ]
+      }
+    ],
+    "out_of_range_values": [
+      {
+        "field": "age",
+        "range": "18-100",
+        "count": 2,
+        "invalid_values": [
+          15,
+          105
+        ],
+        "rows": [
+          3,
+          4
+        ]
+      },
+      {
+        "field": "test_score",
+        "range": "0.0-100.0",
+        "count": 2,
+        "invalid_values": [
+          150.0,
+          -5.0
+        ],
+        "rows": [
+          9,
+          17
+        ]
+      },
+      {
+        "field": "response_time_ms",
+        "range": "100-10000",
+        "count": 1,
+        "invalid_values": [
+          50
+        ],
+        "rows": [
+          13
+        ]
+      },
+      {
+        "field": "satisfaction_rating",
+        "range": "1-5",
+        "count": 1,
+        "invalid_values": [
+          10
+        ],
+        "rows": [
+          15
+        ]
+      }
+    ],
+    "invalid_values": [
+      {
+        "field": "gender",
+        "allowed_values": [
+          "Male",
+          "Female",
+          "Other",
+          "Prefer not to say"
+        ],
+        "count": 2,
+        "invalid_values": [
+          "M",
+          "Unknown"
+        ],
+        "rows": [
+          5,
+          17
+        ]
+      },
+      {
+        "field": "education_level",
+        "allowed_values": [
+          "High School",
+          "Bachelor's",
+          "Master's",
+          "PhD",
+          "Other"
+        ],
+        "count": 1,
+        "invalid_values": [
+          "College"
+        ],
+        "rows": [
+          6
+        ]
+      },
+      {
+        "field": "study_group",
+        "allowed_values": [
+          "Control",
+          "Treatment",
+          "Placebo"
+        ],
+        "count": 1,
+        "invalid_values": [
+          "Group A"
+        ],
+        "rows": [
+          11
+        ]
+      }
+    ],
+    "format_violations": [
+      {
+        "field": "participant_id",
+        "expected_format": "P### (e.g., P001, P123)",
+        "count": 1,
+        "invalid_values": [
+          "PARTICIPANT_001"
+        ],
+        "rows": [
+          1
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "total_issues": 15,
+    "critical_issues": 7,
+    "warning_issues": 8
+  }
+}

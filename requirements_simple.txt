@@ -1,0 +1,19 @@
+# Simple requirements for Configuration Research Agent
+# Compatible with Python 3.13
+
+# Web Framework
+fastapi
+uvicorn
+python-multipart
+jinja2
+pydantic
+
+# File Processing (use latest compatible versions)
+openpyxl
+PyPDF2
+
+# HTML Processing
+beautifulsoup4
+
+# Utilities
+python-dotenv

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Research Agent - Chat Interface</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Meta tags for mobile optimization -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Config Agent">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <span>Config Research Agent</span>
+                </a>
+                
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="chat.clearChatHistory()">
+                        <i class="fas fa-trash"></i>
+                        Clear Chat
+                    </button>
+                    <a href="/api/docs" class="btn btn-outline">
+                        <i class="fas fa-book"></i>
+                        API Docs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-layout">
+        <div class="container">
+            <div class="main-content">
+                <!-- Chat Container -->
+                <div class="chat-container">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <h1 class="chat-title">Configuration Research Agent</h1>
+                        <p class="chat-subtitle">
+                            Upload Excel, PDF, or Link files and ask questions about your configurations. 
+                            I'll analyze your files and provide intelligent insights and troubleshooting recommendations.
+                        </p>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Welcome Message -->
+                        <div class="message assistant">
+                            <div class="message-avatar">🤖</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    <strong>Welcome to the Configuration Research Agent!</strong><br><br>
+                                    
+                                    I can help you with:
+                                    <ul>
+                                        <li>📊 <strong>Excel Analysis</strong> - Analyze configuration templates and validation rules</li>
+                                        <li>📄 <strong>PDF Processing</strong> - Extract error patterns and troubleshooting guides</li>
+                                        <li>🔗 <strong>Link Validation</strong> - Analyze external documentation and resources</li>
+                                        <li>🔧 <strong>Configuration Validation</strong> - Validate your configurations against best practices</li>
+                                        <li>🛠️ <strong>Troubleshooting</strong> - Get AI-powered recommendations for issues</li>
+                                    </ul>
+                                    
+                                    <strong>How to get started:</strong>
+                                    <ol>
+                                        <li>Upload your files using the drag-and-drop area below</li>
+                                        <li>Ask questions about your configurations</li>
+                                        <li>Get intelligent insights and recommendations</li>
+                                    </ol>
+                                    
+                                    <em>All analysis is done using only your uploaded files - no external data sources are used.</em>
+                                </div>
+                                <div class="message-time">{{ current_time }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Area -->
+                    <div class="chat-input-area">
+                        <!-- File Upload Area -->
+                        <div class="file-upload-area">
+                            <div class="file-upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="file-upload-text">
+                                <strong>Drop files here or click to upload</strong>
+                            </div>
+                            <div class="file-upload-hint">
+                                Supports Excel (.xlsx, .xls), PDF (.pdf), JSON (.json), YAML (.yaml, .yml), and Text (.txt) files
+                            </div>
+                        </div>
+
+                        <!-- Uploaded Files -->
+                        <div class="uploaded-files"></div>
+
+                        <!-- Input Form -->
+                        <form class="input-form" onsubmit="event.preventDefault(); chat.sendMessage();">
+                            <div class="input-container">
+                                <textarea 
+                                    class="message-input" 
+                                    placeholder="Ask me about your configurations, upload files for analysis, or request troubleshooting help..."
+                                    rows="1"
+                                ></textarea>
+                            </div>
+                            <button type="submit" class="send-button">
+                                <i class="fas fa-paper-plane"></i>
+                                Send
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="chat.sendQuickMessage('Analyze my uploaded configuration files')">
+                            <i class="fas fa-search"></i>
+                            Analyze Configs
+                        </button>
+                        <button class="action-btn" onclick="chat.sendQuickMessage('Validate my configuration against best practices')">
+                            <i class="fas fa-check-circle"></i>
+                            Validate Config
+                        </button>
+                        <button class="action-btn" onclick="chat.sendQuickMessage('Find potential issues in my configuration')">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Find Issues
+                        </button>
+                        <button class="action-btn" onclick="chat.sendQuickMessage('Generate troubleshooting recommendations')">
+                            <i class="fas fa-tools"></i>
+                            Troubleshoot
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 Configuration Research Agent. Powered by Agentic AI.</p>
+                <div class="footer-links">
+                    <a href="/api/docs">API Documentation</a>
+                    <a href="/api/health">System Status</a>
+                    <a href="https://github.com" target="_blank">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/js/chat.js"></script>
+    
+    <!-- Service Worker for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

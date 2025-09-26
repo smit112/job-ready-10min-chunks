@@ -1,0 +1,202 @@
+{
+  "excel_issues": [
+    {
+      "type": "missing_required_field",
+      "severity": "Critical",
+      "field": "participant_id",
+      "row": 0,
+      "description": "Missing participant ID",
+      "impact": "Cannot identify participant"
+    },
+    {
+      "type": "missing_required_field",
+      "severity": "Critical",
+      "field": "timestamp",
+      "row": 5,
+      "description": "Missing timestamp",
+      "impact": "Cannot determine when survey was completed"
+    },
+    {
+      "type": "broken_url_reference",
+      "severity": "Medium",
+      "field": "feedback_url",
+      "row": 2,
+      "description": "Broken URL reference: https://broken-link.example.com/feedback/125",
+      "impact": "Cannot access feedback data"
+    },
+    {
+      "type": "invalid_data_type",
+      "severity": "High",
+      "field": "age",
+      "row": 3,
+      "description": "Age should be numeric, found: thirty-two",
+      "impact": "Cannot perform numeric analysis on age"
+    },
+    {
+      "type": "out_of_range_value",
+      "severity": "High",
+      "field": "satisfaction_score",
+      "row": 4,
+      "description": "Satisfaction score 6.5 outside valid range (1-5)",
+      "impact": "Invalid satisfaction data for analysis"
+    },
+    {
+      "type": "out_of_range_value",
+      "severity": "High",
+      "field": "completion_time",
+      "row": 7,
+      "description": "Completion time -50 cannot be negative",
+      "impact": "Invalid timing data for analysis"
+    }
+  ],
+  "url_issues": [
+    {
+      "type": "missing_row",
+      "severity": "High",
+      "participant_id": "P001",
+      "description": "Participant P001 missing from URL data",
+      "impact": "Data synchronization failure"
+    },
+    {
+      "type": "missing_row",
+      "severity": "High",
+      "participant_id": "P005",
+      "description": "Participant P005 missing from URL data",
+      "impact": "Data synchronization failure"
+    },
+    {
+      "type": "extra_row",
+      "severity": "Medium",
+      "participant_id": "P010",
+      "description": "Participant P010 present in URL but not Excel",
+      "impact": "Data source inconsistency"
+    },
+    {
+      "type": "column_name_mismatch",
+      "severity": "High",
+      "participant_id": "P003",
+      "description": "Column name mismatch: time_taken vs completion_time",
+      "impact": "Data mapping confusion"
+    },
+    {
+      "type": "data_value_mismatch",
+      "severity": "High",
+      "participant_id": "P004",
+      "description": "Satisfaction score mismatch: URL=4.5, Excel=6.5",
+      "impact": "Data integrity issue"
+    },
+    {
+      "type": "data_value_mismatch",
+      "severity": "Medium",
+      "participant_id": "P007",
+      "description": "Income mismatch: URL=105000, Excel=110000",
+      "impact": "Data synchronization issue"
+    },
+    {
+      "type": "connectivity_issue",
+      "severity": "High",
+      "description": "Simulated API timeout during data fetch",
+      "impact": "Incomplete data retrieval"
+    },
+    {
+      "type": "access_permission_issue",
+      "severity": "Medium",
+      "description": "Rate limiting detected on survey API",
+      "impact": "Delayed data synchronization"
+    }
+  ],
+  "cross_reference_issues": [
+    {
+      "issue_type": "Missing Required Field",
+      "documented_pattern": "Required Field Missing",
+      "severity": "Critical",
+      "description": "Excel issue matches documented pattern: Missing participant ID",
+      "recommendation": "Implement data validation at entry point",
+      "affected_records": [
+        0
+      ]
+    },
+    {
+      "issue_type": "Missing Required Field",
+      "documented_pattern": "Required Field Missing",
+      "severity": "Critical",
+      "description": "Excel issue matches documented pattern: Missing timestamp",
+      "recommendation": "Implement data validation at entry point",
+      "affected_records": [
+        5
+      ]
+    },
+    {
+      "issue_type": "Broken URL Reference",
+      "documented_pattern": "Broken References",
+      "severity": "Medium",
+      "description": "Excel issue matches documented pattern: Broken URL reference: https://broken-link.example.com/feedback/125",
+      "recommendation": "Implement URL validation and monitoring",
+      "affected_records": [
+        2
+      ]
+    },
+    {
+      "issue_type": "Missing Row",
+      "documented_pattern": "Missing Rows",
+      "severity": "High",
+      "description": "URL issue matches documented pattern: Participant P001 missing from URL data",
+      "recommendation": "Implement data synchronization monitoring",
+      "affected_records": [
+        "P001"
+      ]
+    },
+    {
+      "issue_type": "Missing Row",
+      "documented_pattern": "Missing Rows",
+      "severity": "High",
+      "description": "URL issue matches documented pattern: Participant P005 missing from URL data",
+      "recommendation": "Implement data synchronization monitoring",
+      "affected_records": [
+        "P005"
+      ]
+    },
+    {
+      "issue_type": "Column Name Mismatch",
+      "documented_pattern": "Column Name Mismatches",
+      "severity": "High",
+      "description": "URL issue matches documented pattern: Column name mismatch: time_taken vs completion_time",
+      "recommendation": "Standardize schema across data sources",
+      "affected_records": [
+        "P003"
+      ]
+    }
+  ],
+  "integration_issues": [
+    {
+      "issue_type": "Data Source Synchronization",
+      "severity": "High",
+      "description": "Multiple data sources show inconsistent record counts",
+      "impact": "Data integrity compromised",
+      "recommendation": "Implement automated synchronization monitoring"
+    },
+    {
+      "issue_type": "Format Standardization",
+      "severity": "Medium",
+      "description": "Inconsistent date formats across data sources",
+      "impact": "Data processing complexity",
+      "recommendation": "Standardize date formats in data pipeline"
+    },
+    {
+      "issue_type": "Schema Evolution",
+      "severity": "High",
+      "description": "Column name changes between data sources",
+      "impact": "Data mapping failures",
+      "recommendation": "Implement schema versioning and mapping"
+    }
+  ],
+  "summary": {
+    "total_records": 18,
+    "total_issues": 23,
+    "critical_issues": 2,
+    "high_issues": 8,
+    "medium_issues": 4,
+    "quality_score": 32,
+    "analysis_timestamp": "2025-09-26T03:04:27.911245"
+  }
+}

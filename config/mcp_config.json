@@ -1,0 +1,78 @@
+{
+  "mcp_server": {
+    "name": "agentic-config-research",
+    "version": "1.0.0",
+    "description": "MCP server for configuration research and troubleshooting",
+    "tools": [
+      {
+        "name": "process_excel_config",
+        "enabled": true,
+        "timeout": 300
+      },
+      {
+        "name": "analyze_error_pdf",
+        "enabled": true,
+        "timeout": 180
+      },
+      {
+        "name": "validate_configuration_links",
+        "enabled": true,
+        "timeout": 120,
+        "max_concurrent": 10
+      },
+      {
+        "name": "automated_troubleshooting",
+        "enabled": true,
+        "timeout": 300
+      },
+      {
+        "name": "configuration_validation",
+        "enabled": true,
+        "timeout": 180
+      }
+    ],
+    "logging": {
+      "level": "INFO",
+      "file": "logs/mcp_server.log",
+      "max_size": "10MB",
+      "backup_count": 5
+    }
+  },
+  "workspace": {
+    "root": "/workspace",
+    "data_directories": {
+      "excel": "/workspace/data/excel",
+      "pdfs": "/workspace/data/pdfs",
+      "links": "/workspace/data/links",
+      "configs": "/workspace/config"
+    },
+    "temp_directory": "/tmp/agentic_config_research",
+    "max_file_size": "50MB"
+  },
+  "ai_integration": {
+    "cursor_ai": {
+      "enabled": true,
+      "websocket_port": 8001,
+      "api_port": 8000
+    },
+    "anthropic": {
+      "enabled": false,
+      "model": "claude-3-sonnet-20240229",
+      "max_tokens": 4000
+    },
+    "openai": {
+      "enabled": false,
+      "model": "gpt-4-turbo-preview",
+      "max_tokens": 4000
+    }
+  },
+  "security": {
+    "ssl_enabled": false,
+    "authentication_required": false,
+    "allowed_origins": ["*"],
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100
+    }
+  }
+}
